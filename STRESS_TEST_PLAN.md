@@ -90,12 +90,10 @@
 
 1. **Phase 1 (Local):** Run Playwright E2E tests against `localhost:5173` and Emulator.
 2. **Phase 2 (Dev):** Run k6 load tests against the Development environment (limited scale).
-3. **Phase 3 (Prod):** "Game Day" - Scheduled for [Date TBD].
-    * **Pre-requisite:** Verify Firebase Quotas (Cloud Functions invocations, Firestore writes).
-    * **Action:** Execute k6 script with reduced VUs (start with 10) against production URL.
+3. **Phase 3 (Prod):** Scheduled "Game Day" to test production limits (requires Firebase plan upgrade check).
 
 ## 5. Action Items
 
-* [x] Set up Playwright configuration.
-* [x] Create seed scripts for Firestore data (Implemented in E2E test).
-* [x] Write k6 script for Agent Service load testing.
+* [ ] Set up Playwright configuration.
+* [ ] Create seed scripts for Firestore data.
+* [ ] Write k6 script for Agent Service load testing.

@@ -1,7 +1,7 @@
 import { CustomNode, CustomEdge, NodeData, DepartmentNodeData, LogicNodeData, InputNodeData, OutputNodeData, Status } from '../types';
 import { useStore } from '@/core/store';
 import { AI } from '@/services/ai/AIService';
-import { ImageGeneration } from '@/services/image/ImageGenerationService';
+import { Image } from '@/services/image/ImageService';
 
 // Define the structure of a task in the execution queue
 interface ExecutionTask {
@@ -107,13 +107,9 @@ export class WorkflowEngine {
                 }
             }
 
-        } catch (error: unknown) {
+        } catch (error) {
             console.error(`Error executing node ${node.id}:`, error);
-            if (error instanceof Error) {
-                this.updateNodeStatus(node.id, Status.ERROR);
-            } else {
-                this.updateNodeStatus(node.id, Status.ERROR);
-            }
+            this.updateNodeStatus(node.id, Status.ERROR);
         }
     }
 
@@ -124,7 +120,7 @@ export class WorkflowEngine {
         // --- REAL AI EXECUTION ---
         if (data.departmentName === 'Art Department') {
             // Generate Image
-            const images = await ImageGeneration.generateImages({ prompt, count: 1, aspectRatio: '1:1' });
+            const images = await Image.generateImages({ prompt, count: 1, aspectRatio: '1:1' });
             return images[0]?.url;
         } else if (data.departmentName === 'Marketing Department') {
             // Generate Text

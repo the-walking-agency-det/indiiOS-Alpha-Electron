@@ -1,6 +1,6 @@
 import React, { useState, useRef } from 'react';
 import { useStore, HistoryItem } from '@/core/store';
-import { ImageGeneration } from '@/services/image/ImageGenerationService';
+import { Image as ImageService } from '@/services/image/ImageService';
 import { X, Upload, Image as ImageIcon, Sparkles, Loader2, Search } from 'lucide-react';
 import { useToast } from '@/core/context/ToastContext';
 
@@ -54,7 +54,7 @@ export default function FrameSelectionModal({ isOpen, onClose, onSelect, target 
         if (!prompt.trim()) return;
         setIsGenerating(true);
         try {
-            const results = await ImageGeneration.generateImages({
+            const results = await ImageService.generateImages({
                 prompt: prompt,
                 count: 1,
                 resolution: '1K',
@@ -77,13 +77,9 @@ export default function FrameSelectionModal({ isOpen, onClose, onSelect, target 
                 onSelect(newItem);
                 onClose();
             }
-        } catch (e: unknown) {
+        } catch (e) {
             console.error("Frame Generation Error:", e);
-            if (e instanceof Error) {
-                toast.error(`Failed to generate frame: ${e.message}`);
-            } else {
-                toast.error("Failed to generate frame: An unknown error occurred.");
-            }
+            toast.error("Failed to generate frame.");
         } finally {
             setIsGenerating(false);
         }

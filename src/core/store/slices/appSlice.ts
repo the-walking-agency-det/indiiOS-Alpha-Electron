@@ -9,7 +9,7 @@ export interface Project {
 }
 
 export interface AppSlice {
-    currentModule: 'creative' | 'legal' | 'music' | 'marketing' | 'video' | 'workflow' | 'dashboard' | 'select-org' | 'knowledge' | 'road' | 'brand' | 'publicist' | 'social';
+    currentModule: 'creative' | 'legal' | 'music' | 'marketing' | 'video' | 'workflow' | 'dashboard' | 'select-org' | 'knowledge';
     currentProjectId: string;
     projects: Project[];
     setModule: (module: AppSlice['currentModule']) => void;
@@ -19,8 +19,6 @@ export interface AppSlice {
     createNewProject: (name: string, type: Project['type'], orgId: string) => Promise<string>;
     pendingPrompt: string | null;
     setPendingPrompt: (prompt: string | null) => void;
-    apiKeyError: boolean;
-    setApiKeyError: (error: boolean) => void;
 }
 
 export const createAppSlice: StateCreator<AppSlice> = (set, get) => ({
@@ -51,6 +49,4 @@ export const createAppSlice: StateCreator<AppSlice> = (set, get) => ({
     },
     pendingPrompt: null,
     setPendingPrompt: (prompt) => set({ pendingPrompt: prompt }),
-    apiKeyError: false,
-    setApiKeyError: (error) => set({ apiKeyError: error }),
 });

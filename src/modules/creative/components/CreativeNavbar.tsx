@@ -1,9 +1,7 @@
 import React, { useState, useRef } from 'react';
 import { useStore } from '@/core/store';
 import { ScreenControl } from '@/services/screen/ScreenControlService';
-import { ImageGeneration } from '@/services/image/ImageGenerationService';
-import { VideoGeneration } from '@/services/image/VideoGenerationService';
-import { Editing } from '@/services/image/EditingService'; // For completeness
+import { Image } from '@/services/image/ImageService';
 import { auth } from '@/services/firebase';
 import { MonitorPlay, Sparkles, Loader2, ChevronDown, ChevronUp, Image as ImageIcon, Video, Settings2 } from 'lucide-react';
 import PromptBuilder from './PromptBuilder';
@@ -34,7 +32,7 @@ export default function CreativeNavbar() {
         try {
             let results;
             if (generationMode === 'video') {
-                results = await VideoGeneration.generateVideo({
+                results = await Image.generateVideo({
                     prompt: prompt,
                     resolution: studioControls.resolution,
                     aspectRatio: studioControls.aspectRatio,
@@ -45,7 +43,7 @@ export default function CreativeNavbar() {
                     timeOffset: videoInputs.timeOffset
                 });
             } else {
-                results = await ImageGeneration.generateImages({
+                results = await Image.generateImages({
                     prompt: prompt,
                     count: 1,
                     resolution: studioControls.resolution,
@@ -80,12 +78,8 @@ export default function CreativeNavbar() {
                     // Check if it's a fallback image (Storyboard)
                     if (lastVideo.url.startsWith('data:image')) {
                         setVideoInput('firstFrame', {
-                            id: crypto.randomUUID(),
                             url: lastVideo.url,
-                            prompt: lastVideo.prompt,
-                            type: 'image',
-                            timestamp: Date.now(),
-                            projectId: currentProjectId
+                            file: null
                         });
                         toast.success("Daisy Chain: Next frame set (from Storyboard)!");
                     } else {
@@ -94,34 +88,22 @@ export default function CreativeNavbar() {
                         const lastFrameData = await extractVideoFrame(lastVideo.url, -1);
 
                         setVideoInput('firstFrame', {
-                            id: crypto.randomUUID(),
                             url: lastFrameData,
-                            prompt: lastVideo.prompt,
-                            type: 'image',
-                            timestamp: Date.now(),
-                            projectId: currentProjectId
+                            file: null // It's a data URI, no file object
                         });
                     }
                     setVideoInput('lastFrame', null); // Clear last frame for next segment
                     if (!lastVideo.url.startsWith('data:image')) toast.success("Daisy Chain: Next frame set!");
-                } catch (e: unknown) {
-                    console.error("Daisy Chain Error:", e);
-                    if (e instanceof Error) {
-                        toast.error(`Failed to extract frame for Daisy Chain: ${e.message}`);
-                    } else {
-                        toast.error("Failed to extract frame for Daisy Chain: Unknown error");
-                    }
+                } catch (err) {
+                    console.error("Daisy Chain Error:", err);
+                    toast.error("Failed to extract frame for Daisy Chain");
                 }
             }
 
             setPrompt('');
-        } catch (e: unknown) {
+        } catch (e) {
             console.error("Generation Error:", e);
-            if (e instanceof Error) {
-                toast.error(`Generation failed: ${e.message}`);
-            } else {
-                toast.error(`Generation failed: Unknown error`);
-            }
+            toast.error(`Generation failed: ${e instanceof Error ? e.message : 'Unknown error'}`);
         } finally {
             setIsGenerating(false);
         }

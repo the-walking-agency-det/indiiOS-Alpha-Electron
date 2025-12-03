@@ -86,7 +86,7 @@ export const MUSIC_TOOLS = {
         try {
             const res = await AI.generateContent({
                 model: 'gemini-3-pro-preview',
-                contents: { role: 'user', parts: [{ text: prompt }] }
+                contents: { parts: [{ text: prompt }] }
             });
             return res.text() || "Synesthetic visualization of audio frequencies.";
         } catch (e) {
@@ -131,7 +131,7 @@ export const MUSIC_TOOLS = {
         try {
             const res = await AI.generateContent({
                 model: 'gemini-3-pro-preview',
-                contents: { role: 'user', parts: [{ text: prompt }] }
+                contents: { parts: [{ text: prompt }] }
             });
 
             const text = res.text() || "{}";

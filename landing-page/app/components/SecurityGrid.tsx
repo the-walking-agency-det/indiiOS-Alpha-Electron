@@ -5,8 +5,6 @@ import { useRef, useMemo } from 'react';
 import * as THREE from 'three';
 import { Instances, Instance } from '@react-three/drei';
 
-import { useAudioStore } from '../store/audioStore';
-
 function LaserGrid() {
     const meshRef = useRef<THREE.InstancedMesh>(null!);
     const count = 40;
@@ -24,14 +22,8 @@ function LaserGrid() {
         const dummy = new THREE.Object3D();
 
         beams.forEach((beam, i) => {
-            // Vertical flow
             const y = beam.y + Math.sin(t * beam.speed + beam.offset) * 0.2;
-
-            // Forward/Backward Wave
-            const z = Math.sin(t * 1.5 + beam.y * 2) * 3;
-
-            dummy.position.set(0, y, z);
-            dummy.rotation.x = Math.cos(t * 1.5 + beam.y * 2) * 0.1;
+            dummy.position.set(0, y, 0);
             dummy.scale.set(1, 1, 1);
             dummy.updateMatrix();
             meshRef.current.setMatrixAt(i, dummy.matrix);
@@ -42,7 +34,7 @@ function LaserGrid() {
     return (
         <Instances range={count} ref={meshRef}>
             <boxGeometry args={[30, 0.05, 0.05]} />
-            <meshBasicMaterial color="#ff0000" transparent opacity={0.8} toneMapped={false} />
+            <meshBasicMaterial color="#00ff00" transparent opacity={0.3} />
             {beams.map((_, i) => (
                 <Instance key={i} />
             ))}
@@ -63,7 +55,7 @@ function Scanner() {
     return (
         <mesh ref={mesh} rotation={[Math.PI / 2, 0, 0]}>
             <planeGeometry args={[1, 1]} />
-            <meshBasicMaterial color="#ff0000" transparent opacity={0.1} side={THREE.DoubleSide} />
+            <meshBasicMaterial color="#00ff00" transparent opacity={0.1} side={THREE.DoubleSide} />
         </mesh>
     );
 }
@@ -109,7 +101,7 @@ function HexShields() {
     return (
         <Instances range={count} ref={meshRef}>
             <circleGeometry args={[1, 6]} />
-            <meshBasicMaterial color="#ff0000" wireframe transparent opacity={0.2} />
+            <meshBasicMaterial color="#00ff00" wireframe transparent opacity={0.4} />
             {hexes.map((_, i) => (
                 <Instance key={i} />
             ))}
@@ -119,84 +111,42 @@ function HexShields() {
 
 function DataVault() {
     const group = useRef<THREE.Group>(null!);
-    const coreMat = useRef<THREE.MeshStandardMaterial>(null!);
-    const ring1 = useRef<THREE.Mesh>(null!);
-    const ring2 = useRef<THREE.Mesh>(null!);
-
-    // Audio Reactivity
-    const bass = useAudioStore((state) => state.frequencyData.bass);
-    const high = useAudioStore((state) => state.frequencyData.high);
 
     useFrame((state) => {
         const t = state.clock.getElapsedTime();
-
-        // Core Pulsate (Bass)
-        const pulse = 1 + bass * 0.5;
-        if (coreMat.current) {
-            coreMat.current.emissiveIntensity = 0.5 + bass * 2;
-            coreMat.current.color.setHSL(0, 1, 0.2 + bass * 0.3); // Red pulse
-        }
-
-        // Rings "Racing" Effect (Highs)
-        // We simulate "racing" by spinning faster with highs
-        const raceSpeed = 0.2 + high * 2;
-
-        if (ring1.current) {
-            ring1.current.rotation.z += raceSpeed * 0.05;
-            ring1.current.rotation.x = Math.PI / 2 + Math.sin(t) * 0.2;
-        }
-        if (ring2.current) {
-            ring2.current.rotation.z -= raceSpeed * 0.05;
-            ring2.current.rotation.z += 0.01;
-        }
-
+        group.current.rotation.y = t * 0.2;
         group.current.position.y = Math.sin(t * 0.5) * 0.5;
     });
 
     return (
         <group ref={group}>
-            {/* Core - Solid Pulsating Base */}
-            <mesh scale={2}>
-                <icosahedronGeometry args={[1, 4]} /> {/* Higher detail for solid look */}
+            {/* Core */}
+            <mesh>
+                <icosahedronGeometry args={[2, 0]} />
                 <meshStandardMaterial
-                    ref={coreMat}
-                    color="#330000"
-                    emissive="#ff0000"
+                    color="#00ff00"
+                    emissive="#00ff00"
                     emissiveIntensity={0.5}
-                    roughness={0.4}
-                    metalness={0.8}
+                    wireframe
+                    transparent
+                    opacity={0.8}
                 />
             </mesh>
 
-            {/* Outer Casing - Dark Purple/Black with Neon Purple */}
-            {/* Ring 1 */}
-            <mesh ref={ring1} rotation={[Math.PI / 2, 0, 0]}>
-                <torusGeometry args={[3, 0.1, 16, 100]} />
-                <meshStandardMaterial
-                    color="#0a0010" // Almost black
-                    emissive="#b026ff" // Neon Purple
-                    emissiveIntensity={2}
-                    roughness={0.1}
-                    metalness={1}
-                />
+            {/* Inner Glow */}
+            <mesh scale={0.8}>
+                <icosahedronGeometry args={[2, 2]} />
+                <meshBasicMaterial color="#ccffcc" transparent opacity={0.2} />
             </mesh>
 
-            {/* Ring 2 */}
-            <mesh ref={ring2} rotation={[0, 0, Math.PI / 4]}>
-                <torusGeometry args={[3.5, 0.05, 16, 100]} />
-                <meshStandardMaterial
-                    color="#000000"
-                    emissive="#8a2be2"
-                    emissiveIntensity={1}
-                    roughness={0.1}
-                    metalness={1}
-                />
+            {/* Rotating Rings */}
+            <mesh rotation={[Math.PI / 2, 0, 0]}>
+                <torusGeometry args={[3, 0.05, 16, 100]} />
+                <meshBasicMaterial color="#00ff00" transparent opacity={0.6} />
             </mesh>
-
-            {/* Energy Field */}
-            <mesh scale={2.5}>
-                <sphereGeometry args={[1, 32, 32]} />
-                <meshBasicMaterial color="#ff0000" transparent opacity={0.05} side={THREE.BackSide} />
+            <mesh rotation={[0, 0, Math.PI / 4]}>
+                <torusGeometry args={[3.5, 0.02, 16, 100]} />
+                <meshBasicMaterial color="#00ff00" transparent opacity={0.4} />
             </mesh>
         </group>
     );
@@ -209,7 +159,7 @@ export default function SecurityGrid() {
             <Scanner />
             <HexShields />
             <DataVault />
-            <pointLight position={[0, 0, 5]} color="#ff0000" intensity={5} distance={20} />
+            <pointLight position={[0, 0, 5]} color="#00ff00" intensity={2} distance={20} />
         </group>
     );
 }

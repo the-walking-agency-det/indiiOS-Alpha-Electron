@@ -32,4 +32,4 @@ This document tracks the implementation of technical improvements and architectu
 ## Phase 6: Stability & Scale (Current Focus)
 
 - [ ] **Stress Testing**: Execute the [Stress Test Plan](./STRESS_TEST_PLAN.md).
-- [x] **E2E Testing**: Implement Playwright flows for critical paths.
+- [ ] **E2E Testing**: Implement Playwright flows for critical paths.

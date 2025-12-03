@@ -1,7 +1,6 @@
 import React, { useRef, useEffect, useState } from 'react';
 import { useStore, CanvasImage } from '@/core/store';
-import { ImageGeneration } from '@/services/image/ImageGenerationService';
-import { Editing } from '@/services/image/EditingService';
+import { Image } from '@/services/image/ImageService';
 import { Loader2, Move, MousePointer2, Eraser, ImagePlus } from 'lucide-react';
 
 export default function InfiniteCanvas() {
@@ -246,7 +245,7 @@ export default function InfiniteCanvas() {
 
             // Use ImageService for generation (Edit Mode / Magic Fill)
             // We use editImage to include the context
-            const result = await Editing.editImage({
+            const result = await Image.editImage({
                 image: { mimeType: 'image/png', data: base64Data },
                 prompt: prompt
             });
@@ -261,7 +260,7 @@ export default function InfiniteCanvas() {
                 });
             } else {
                 // Fallback to pure generation if edit returns null (unlikely)
-                const results = await ImageGeneration.generateImages({
+                const results = await Image.generateImages({
                     prompt: prompt,
                     count: 1,
                     aspectRatio: "1:1"
@@ -277,13 +276,9 @@ export default function InfiniteCanvas() {
                     });
                 }
             }
-        } catch (e: unknown) {
+        } catch (e) {
             console.error(e);
-            if (e instanceof Error) {
-                alert(`Generation failed: ${e.message}`);
-            } else {
-                alert("Generation failed: An unknown error occurred.");
-            }
+            alert("Generation failed");
         } finally {
             setIsGenerating(false);
             setTool('select');

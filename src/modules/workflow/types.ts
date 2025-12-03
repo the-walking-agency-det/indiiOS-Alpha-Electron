@@ -136,8 +136,6 @@ export interface BrandKit {
 export interface UserProfile {
     bio: string;
     preferences: string;
-    careerStage?: string;
-    goals?: string[];
     brandKit: BrandKit;
     analyzedTrackIds: string[];
     knowledgeBase: KnowledgeDocument[];

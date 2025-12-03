@@ -4,9 +4,7 @@ import { Upload, X, Image as ImageIcon, Video, Wand2, Loader2, Play, MonitorPlay
 import { motion, AnimatePresence } from 'framer-motion';
 import { useToast } from '@/core/context/ToastContext';
 
-import { ImageGeneration } from '@/services/image/ImageGenerationService';
-import { VideoGeneration } from '@/services/image/VideoGenerationService';
-import { Editing } from '@/services/image/EditingService';
+import { Image } from '@/services/image/ImageService';
 
 export default function Showroom() {
     const { addToHistory, currentProjectId } = useStore();
@@ -61,7 +59,7 @@ export default function Showroom() {
             Requirements: Photorealistic texture mapping, correct perspective, fabric folds, lighting interaction. 
             The graphic should look like it is physically printed on the object.`;
 
-            const result = await Editing.generateComposite({
+            const result = await Image.generateComposite({
                 images: [assetImage],
                 prompt: fullPrompt,
                 projectContext: "High-end commercial product photography."
@@ -84,13 +82,9 @@ export default function Showroom() {
             } else {
                 toast.error("Failed to generate mockup.");
             }
-        } catch (error: unknown) {
+        } catch (error) {
             console.error(error);
-            if (error instanceof Error) {
-                toast.error(`Failed to generate mockup: ${error.message}`);
-            } else {
-                toast.error("Failed to generate mockup: An unknown error occurred.");
-            }
+            toast.error("Failed to generate mockup.");
         } finally {
             setIsGeneratingMockup(false);
         }
@@ -104,7 +98,7 @@ export default function Showroom() {
 
         setIsGeneratingVideo(true);
         try {
-            const results = await VideoGeneration.generateVideo({
+            const results = await Image.generateVideo({
                 prompt: `Cinematic product showcase. ${motionPrompt}`,
                 firstFrame: mockupResult,
                 resolution: '720p', // Veo default
@@ -128,14 +122,9 @@ export default function Showroom() {
             } else {
                 toast.error("Failed to animate scene.");
             }
-        } catch (error: unknown) {
+        } catch (error) {
             console.error(error);
-            if (error instanceof Error) {
-                toast.error(`Failed to animate scene: ${error.message}`);
-            }
-            else {
-                toast.error("Failed to animate scene: An unknown error occurred.");
-            }
+            toast.error("Failed to animate scene.");
         } finally {
             setIsGeneratingVideo(false);
         }

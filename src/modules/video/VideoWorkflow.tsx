@@ -3,8 +3,6 @@ import { Film, X } from 'lucide-react';
 import { useStore } from '../../core/store';
 import CreativeGallery from '../creative/components/CreativeGallery';
 import { useToast } from '../../core/context/ToastContext';
-import { functions } from '@/services/firebase';
-import { httpsCallable } from 'firebase/functions';
 
 export default function VideoWorkflow() {
     const { generatedHistory, selectedItem, uploadedImages, pendingPrompt, setPendingPrompt, addToHistory } = useStore();
@@ -23,42 +21,30 @@ export default function VideoWorkflow() {
 
     const handleGenerate = async (prompt: string) => {
         setIsGenerating(true);
-        toast.info('Directing scene...');
+        toast.info('Generating video...');
         try {
-            // Call the Creative Director Agent via Firebase Functions
-            const creativeDirectorAgent = httpsCallable(functions, 'creativeDirectorAgent');
-            const response = await creativeDirectorAgent({ prompt });
-            const data = response.data as any;
-            const result = data.result;
+            // Simulate generation for now or call actual service if ready
+            // const uri = await Video.generateVideo({ prompt });
 
-            if (result.success && result.data) {
-                // Handle different response types (image vs video)
-                // The agent might return a video URL or an image URL (storyboard)
-                // For now, let's assume it returns a standard format we can adapt
+            // For testing/demo purposes, we'll simulate a delay and add a mock video
+            // In production, this would call the actual backend
+            await new Promise(resolve => setTimeout(resolve, 3000));
 
-                // Note: The agent tool returns { success, data }
-                // We need to parse the inner data
+            const mockVideo = {
+                id: Date.now().toString(),
+                type: 'video' as const,
+                url: 'https://storage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4', // Placeholder
+                prompt: prompt,
+                timestamp: Date.now(),
+                thumbnail: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/images/BigBuckBunny.jpg',
+                projectId: 'default'
+            };
 
-                const assetUrl = result.data.url || result.mockUrl; // Fallback to mockUrl if provided by tool stub
-
-                const newAsset = {
-                    id: Date.now().toString(),
-                    type: (assetUrl.includes('.mp4') ? 'video' : 'image') as 'video' | 'image',
-                    url: assetUrl,
-                    prompt: prompt,
-                    timestamp: Date.now(),
-                    projectId: 'default'
-                };
-
-                addToHistory(newAsset);
-                toast.success('Scene generated!');
-            } else {
-                throw new Error(result.error || 'Generation failed');
-            }
-
-        } catch (error: any) {
+            addToHistory(mockVideo);
+            toast.success('Video generated!');
+        } catch (error) {
             console.error("Video generation failed:", error);
-            toast.error(`Generation failed: ${error.message}`);
+            toast.error('Generation failed');
         } finally {
             setIsGenerating(false);
         }
