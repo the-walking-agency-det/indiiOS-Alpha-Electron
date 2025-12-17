@@ -9,7 +9,26 @@ import { AI } from '@/services/ai/AIService';
 vi.mock('@/services/ai/AIService', () => ({
     AI: {
         generateContent: vi.fn(),
+        // Provide a default stream implementation for agents that use streaming APIs
+        generateContentStream: vi.fn().mockResolvedValue({
+            getReader: () => ({
+                read: vi.fn()
+                    // First chunk carries a simple final response payload
+                    .mockResolvedValueOnce({ done: false, value: { text: () => '{"final_response":"Done"}' } })
+                    // Then signal completion
+                    .mockResolvedValue({ done: true, value: undefined })
+            })
+        })
     }
+}));
+
+// Prevent Firebase from initializing during unit tests
+vi.mock('@/services/firebase', () => ({
+    app: {},
+    auth: {},
+    storage: {},
+    functions: {},
+    db: {}
 }));
 
 // Mock Store
