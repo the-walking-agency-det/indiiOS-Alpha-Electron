@@ -1,14 +1,31 @@
 
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { AgentService } from './AgentService';
 import { agentRegistry } from './registry';
 import { useStore } from '@/core/store';
 import { AI } from '@/services/ai/AIService';
 
+// Provide stable environment configuration to avoid validation noise
+vi.mock('@/config/env', () => ({
+    env: {
+        apiKey: 'test-api-key',
+        projectId: 'test-project',
+        location: 'us-central1',
+        useVertex: false,
+        googleMapsApiKey: 'test-maps',
+        VITE_FUNCTIONS_URL: 'http://localhost/functions',
+        VITE_RAG_PROXY_URL: 'http://localhost/rag',
+        VITE_GOOGLE_MAPS_API_KEY: 'test-maps',
+        DEV: true,
+        skipOnboarding: true
+    }
+}));
+
 // Mock AI Service to control responses and simulate tool usage
 vi.mock('@/services/ai/AIService', () => ({
     AI: {
         generateContent: vi.fn(),
+        embedContent: vi.fn().mockResolvedValue({ embedding: { values: [0.1, 0.1, 0.1] } }),
         // Provide a default stream implementation for agents that use streaming APIs
         generateContentStream: vi.fn().mockResolvedValue({
             getReader: () => ({
@@ -31,6 +48,32 @@ vi.mock('@/services/firebase', () => ({
     db: {}
 }));
 
+// Stub FirestoreService so memory access does not hit real Firebase
+vi.mock('@/services/FirestoreService', () => {
+    class MockFirestoreService<T> {
+        constructor(public collectionPath: string) { }
+
+        add = vi.fn().mockResolvedValue('mock-id');
+        update = vi.fn().mockResolvedValue();
+        delete = vi.fn().mockResolvedValue();
+        get = vi.fn().mockResolvedValue(null);
+        list = vi.fn().mockResolvedValue([]);
+        query = vi.fn().mockResolvedValue([]);
+    }
+
+    return { FirestoreService: MockFirestoreService };
+});
+
+// Memory service helpers (used by ContextPipeline)
+vi.mock('@/services/agent/MemoryService', () => ({
+    memoryService: {
+        saveMemory: vi.fn(),
+        retrieveRelevantMemories: vi.fn().mockResolvedValue([]),
+        clearProjectMemory: vi.fn(),
+        regenerateEmbeddings: vi.fn()
+    }
+}));
+
 // Mock Store
 vi.mock('@/core/store', () => ({
     useStore: {
@@ -45,6 +88,12 @@ describe('Agent Architecture Integration (Hardened)', () => {
 
     beforeEach(() => {
         vi.clearAllMocks();
+
+        // Provide a safe default response for any AI calls we don't explicitly mock
+        (AI.generateContent as any).mockResolvedValue({
+            text: () => '',
+            functionCalls: () => []
+        });
 
         // Setup complex store state
         mockStoreState = {
@@ -149,7 +198,10 @@ describe('Agent Architecture Integration (Hardened)', () => {
             addAgentMessage({ id: '2', role: 'model', text: 'Prev Model', timestamp: 200 });
 
             (AI.generateContent as any).mockResolvedValueOnce({ text: () => 'marketing' }); // Router
-            (AI.generateContent as any).mockResolvedValueOnce({ text: () => 'Response' }); // Agent
+            (AI.generateContent as any).mockResolvedValueOnce({
+                text: () => 'Response',
+                functionCalls: () => []
+            }); // Agent
 
             await service.sendMessage('New Message');
 
