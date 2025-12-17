@@ -26,18 +26,19 @@ vi.mock('@/services/ai/AIService', () => ({
     AI: {
         generateContent: vi.fn(),
         embedContent: vi.fn().mockResolvedValue({ embedding: { values: [0.1, 0.1, 0.1] } }),
-        // Provide a default stream implementation for agents that use streaming APIs
-        generateContentStream: vi.fn().mockResolvedValue({
-            getReader: () => ({
-                read: vi.fn()
-                    // First chunk carries a simple final response payload
-                    .mockResolvedValueOnce({ done: false, value: { text: () => '{"final_response":"Done"}' } })
-                    // Then signal completion
-                    .mockResolvedValue({ done: true, value: undefined })
-            })
-        })
+        generateContentStream: vi.fn()
     }
 }));
+
+const buildStreamResponse = (finalText: string) => ({
+    getReader: () => ({
+        read: vi.fn()
+            // First chunk carries a simple final response payload
+            .mockResolvedValueOnce({ done: false, value: { text: () => `{"final_response":"${finalText}"}` } })
+            // Then signal completion
+            .mockResolvedValue({ done: true, value: undefined })
+    })
+});
 
 // Prevent Firebase from initializing during unit tests
 vi.mock('@/services/firebase', () => ({
@@ -94,6 +95,8 @@ describe('Agent Architecture Integration (Hardened)', () => {
             text: () => '',
             functionCalls: () => []
         });
+
+        (AI.generateContentStream as any).mockResolvedValue(buildStreamResponse(''));
 
         // Setup complex store state
         mockStoreState = {
@@ -235,15 +238,23 @@ describe('Agent Architecture Integration (Hardened)', () => {
 
     describe('Robustness & Error Handling', () => {
         it('should route to Generalist if Orchestrator hallucinations an invalid ID', async () => {
-            (AI.generateContent as any).mockResolvedValue({
-                text: () => 'super-mega-agent-9000'
+            // First call: orchestrator returns an invalid agent id
+            (AI.generateContent as any).mockResolvedValueOnce({
+                text: () => 'super-mega-agent-9000',
+                functionCalls: () => []
             });
+
+            // Second call: generalist agent handles the task gracefully
+            (AI.generateContentStream as any).mockResolvedValueOnce(buildStreamResponse('Generalist fallback response'));
 
             const generalistSpy = vi.spyOn(agentRegistry, 'get');
 
             await service.sendMessage('Do something crazy');
 
             expect(generalistSpy).toHaveBeenCalledWith('generalist');
+
+            const lastMsg = mockStoreState.agentHistory[mockStoreState.agentHistory.length - 1];
+            expect(lastMsg.text).toBe('Generalist fallback response');
         });
 
         it('should gracefully handle agent execution failure', async () => {
